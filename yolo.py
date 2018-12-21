@@ -210,3 +210,11 @@ def detect_video(yolo, video_path, output_path=""):
             break
     yolo.close_session()
 
+
+
+
+if __name__ =='__main__':
+
+    yolo = YOLO()
+    video_path="10.mp4"
+    detect_video(yolo,video_path)
