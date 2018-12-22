@@ -67,15 +67,21 @@ class YOLO(object):
         num_classes = len(self.class_names)
         is_tiny_version = num_anchors==6 # default setting
         try:
+            # 当载入的模型没有保存网络参数时出现异常
             self.yolo_model = load_model(model_path, compile=False)
+        # 异常处理为其添加网络模型
         except:
             self.yolo_model = tiny_yolo_body(Input(shape=(None,None,3)), num_anchors//2, num_classes) \
                 if is_tiny_version else yolo_body(Input(shape=(None,None,3)), num_anchors//3, num_classes)
+            # 模型载入参数
             self.yolo_model.load_weights(self.model_path) # make sure model, anchors and classes match
         else:
+            # 模型的输出和给定类别数目不匹配时　　assert false 抛出异常提示
             assert self.yolo_model.layers[-1].output_shape[-1] == \
                 num_anchors/len(self.yolo_model.output) * (num_classes + 5), \
                 'Mismatch between model and given anchor and class sizes'
+            # model.layer[-1]:网络最后一层输出。 output_shape[-1]:输出维度的最后一维。 -> (?,13,13,255)
+            # 255 = 9/3*(80+5)
 
         print('{} model, anchors, and classes loaded.'.format(model_path))
 
@@ -93,6 +99,7 @@ class YOLO(object):
         # Generate output tensor targets for filtered bounding boxes.
         self.input_image_shape = K.placeholder(shape=(2, ))
         if self.gpu_num>=2:
+            # 模型复制到多个gpu上
             self.yolo_model = multi_gpu_model(self.yolo_model, gpus=self.gpu_num)
         boxes, scores, classes = yolo_eval(self.yolo_model.output, self.anchors,
                 len(self.class_names), self.input_image_shape,
@@ -115,13 +122,14 @@ class YOLO(object):
         print(image_data.shape)
         image_data /= 255.
         image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
+        # 维度扩增　（416,416,3) > (1,416,416,3)
 
         out_boxes, out_scores, out_classes = self.sess.run(
             [self.boxes, self.scores, self.classes],
             feed_dict={
                 self.yolo_model.input: image_data,
                 self.input_image_shape: [image.size[1], image.size[0]],
-                K.learning_phase(): 0
+                K.learning_phase(): 0  # 0 测试模式　1 训练模式
             })
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))

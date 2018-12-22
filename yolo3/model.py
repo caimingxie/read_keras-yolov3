@@ -183,13 +183,15 @@ def yolo_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape)
     box_scores = K.reshape(box_scores, [-1, num_classes])
     return boxes, box_scores
 
-
+            # yolo_outputs:  模型的输出【（?，13,13,255）（?，26,26,255）（?,52,52,255）】
 def yolo_eval(yolo_outputs,
               anchors,
               num_classes,
               image_shape,
+              # 每张图每个类别最多20个框
               max_boxes=20,
               score_threshold=.6,
+              # 大于Iou阈值的被视为同一个对象　所以对于人群密度高的应该设置大值　而稀疏的应该设置小值
               iou_threshold=.5):
     """Evaluate YOLO model on given input and return filtered boxes."""
     num_layers = len(yolo_outputs)
