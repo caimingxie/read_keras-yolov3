@@ -33,6 +33,8 @@ def letterbox_image(image, size):
 def rand(a=0, b=1):
     return np.random.rand()*(b-a) + a
 
+
+
 def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jitter=.3, hue=.1, sat=1.5, val=1.5, proc_img=True):
     '''random preprocessing for real-time data augmentation'''
     line = annotation_line.split()
@@ -40,7 +42,7 @@ def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jit
     iw, ih = image.size
     h, w = input_shape
     box = np.array([np.array(list(map(int,box.split(',')))) for box in line[1:]])
-
+    # 不随机处理，相当于测试处理的方法
     if not random:
         # resize image
         scale = min(w/iw, h/ih)
@@ -63,7 +65,7 @@ def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jit
             box[:, [0,2]] = box[:, [0,2]]*scale + dx
             box[:, [1,3]] = box[:, [1,3]]*scale + dy
             box_data[:len(box)] = box
-
+        #　box_data [x1,y1,x2,y2,class_id]
         return image_data, box_data
 
     # resize image
@@ -119,3 +121,9 @@ def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jit
         box_data[:len(box)] = box
 
     return image_data, box_data
+
+# data augmentation : 增加数据的多样性，但数量没有增加, 同时由于每批次的图像是随机，加上每张图像又是随机的处理，　
+# 没有一张图像是重复的大大的提高了数据的多样性
+# box_data : 框的顺序和位置也带了随机性质。
+# 在线随机数据增强！！！！
+

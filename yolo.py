@@ -18,6 +18,7 @@ from yolo3.utils import letterbox_image
 import os
 from keras.utils import multi_gpu_model
 
+# model_size  可以改变因为学习到的是filter 与尺寸无关
 class YOLO(object):
     _defaults = {
         "model_path": 'model_data/yolo.h5',
@@ -25,7 +26,7 @@ class YOLO(object):
         "classes_path": 'model_data/coco_classes.txt',
         "score" : 0.3,
         "iou" : 0.45,
-        "model_image_size" : (416, 416),
+        "model_image_size" :(320, 416),
         "gpu_num" : 1,
     }
 
@@ -122,7 +123,9 @@ class YOLO(object):
         print(image_data.shape)
         image_data /= 255.
         image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
-        # 维度扩增　（416,416,3) > (1,416,416,3)
+        # 维度扩增　（416,416,3) >
+
+        # image 可以支持多张图的同时输入
 
         out_boxes, out_scores, out_classes = self.sess.run(
             [self.boxes, self.scores, self.classes],
