@@ -53,6 +53,7 @@ def _main():
         model.compile(optimizer=Adam(lr=1e-3), loss={
             # use custom yolo_loss Lambda layer.
             'yolo_loss': lambda y_true, y_pred: y_pred})
+        # y_true,y_pred 为参数  y_pred 表达式子
 
         batch_size = 32
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
@@ -75,6 +76,7 @@ def _main():
 
         batch_size = 32 # note that more GPU memory is required after unfreezing the body
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
+        # model.fit_generator 有next方法调用
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
             validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
@@ -106,12 +108,17 @@ def create_model(input_shape, anchors, num_classes, load_pretrained=True, freeze
             weights_path='model_data/yolo_weights.h5'):
     '''create the training model'''
     K.clear_session() # get a new session
+    # Input : keras layers.input
+    #  image_input (batch, image_h,image_w,3)
     image_input = Input(shape=(None, None, 3))
+    # h, w 416 416
     h, w = input_shape
     num_anchors = len(anchors)
 
+    # [tf<>shape(?, 13, 13 ,3, 85),tf<>shape(?, 26, 26,3, 85),tf<>shape(?, 52, 52 ,3, 85)]
     y_true = [Input(shape=(h//{0:32, 1:16, 2:8}[l], w//{0:32, 1:16, 2:8}[l], \
         num_anchors//3, num_classes+5)) for l in range(3)]
+
 
     model_body = yolo_body(image_input, num_anchors//3, num_classes)
     print('Create YOLOv3 model with {} anchors and {} classes.'.format(num_anchors, num_classes))
@@ -125,9 +132,12 @@ def create_model(input_shape, anchors, num_classes, load_pretrained=True, freeze
             for i in range(num): model_body.layers[i].trainable = False
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
+    #  Lambda yolo_loss 函数封装为一层
     model_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
         arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5})(
         [*model_body.output, *y_true])
+    #    y----------------->
+    #    model_body.input--->    model_loss(函数封装成一层）是主体     ----> loss(单个值)
     model = Model([model_body.input, *y_true], model_loss)
 
     return model
@@ -166,6 +176,7 @@ def data_generator(annotation_lines, batch_size, input_shape, anchors, num_class
     '''data generator for fit_generator'''
     n = len(annotation_lines)
     i = 0
+    # 每次随机挑选一个bath_size image,从整个数据集中,并非单纯一批一批的遍历整个数据集
     while True:
         image_data = []
         box_data = []
